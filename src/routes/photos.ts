@@ -131,18 +131,21 @@ photosRoutes.post('/', authMiddleware, async (c) => {
   ).first<{ max_sort: number }>();
   const sortOrder = (maxSort?.max_sort ?? 0) + 1;
 
+  // Determine final title: use provided title, fall back to "Photo N"
+  const finalTitle = title.trim() || `Photo${sortOrder}`;
+
   // Insert metadata
   await c.env.DB.prepare(
     `INSERT INTO photos (id, title, r2_key, width, height, size, mime_type, sort_order)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-  ).bind(id, title || file.name.replace(/\.[^/.]+$/, ''), r2Key, width, height, file.size, file.type, sortOrder).run();
+  ).bind(id, finalTitle, r2Key, width, height, file.size, file.type, sortOrder).run();
 
   const base = getBaseUrl(c);
   return c.json({
     success: true,
     photo: {
       id,
-      title: title || file.name.replace(/\.[^/.]+$/, ''),
+      title: finalTitle,
       url: `${base}/api/photos/${id}/image`,
       width, height,
       size: file.size,

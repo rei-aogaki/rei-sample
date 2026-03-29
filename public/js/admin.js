@@ -2,7 +2,6 @@
 
 /* ================================================================
    REI SAMPLE — Admin CMS JavaScript
-   Cloudflare Workers API version
    ================================================================ */
 
 const API_BASE = '/api';
@@ -21,7 +20,7 @@ function escapeHtml(str) {
 }
 
 /* ================================================================
-   AUTH — Token-based (JWT from Workers)
+   AUTH
    ================================================================ */
 
 function getToken() { return sessionStorage.getItem(SESSION_KEY); }
@@ -36,7 +35,6 @@ function authHeaders() {
 async function verifySession() {
   const token = getToken();
   if (!token) return false;
-  // Verify token via dedicated endpoint (auth required)
   try {
     const res = await fetch(`${API_BASE}/auth/verify`, { headers: authHeaders() });
     return res.ok;
@@ -77,22 +75,18 @@ async function initAuth() {
 
     try {
       if (btn) { btn.disabled = true; btn.textContent = '...'; }
-
       const res = await fetch(`${API_BASE}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password: pwd }),
       });
-
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || 'Login failed');
       }
-
       const data = await res.json();
       setToken(data.token);
       showAdminPanel();
-
     } catch (err) {
       if (errorEl) {
         errorEl.textContent = err.message || 'INCORRECT PASSWORD';
@@ -108,12 +102,7 @@ async function initAuth() {
 
 function initLogout() {
   const btn = $('#logoutBtn');
-  if (btn) {
-    btn.addEventListener('click', () => {
-      clearToken();
-      showLoginScreen();
-    });
-  }
+  if (btn) btn.addEventListener('click', () => { clearToken(); showLoginScreen(); });
 }
 
 /* ================================================================
@@ -182,9 +171,7 @@ function initMobileSidebar() {
       ov.style.cssText = 'position:fixed;inset:0;z-index:49;background:rgba(0,0,0,0.5);';
       ov.addEventListener('click', closeMobileSidebar);
       document.body.appendChild(ov);
-    } else {
-      removeSidebarOverlay();
-    }
+    } else { removeSidebarOverlay(); }
   });
 }
 
@@ -202,10 +189,25 @@ function removeSidebarOverlay() {
 }
 
 /* ================================================================
-   UPLOAD
+   UPLOAD — Sequential default titles
    ================================================================ */
 
 let uploadQueue = [];
+let _nextPhotoNum = null; // cached starting number
+
+async function getStartingPhotoNum() {
+  if (_nextPhotoNum !== null) return _nextPhotoNum;
+  try {
+    const res = await fetch(`${API_BASE}/photos`);
+    if (res.ok) {
+      const json = await res.json();
+      _nextPhotoNum = (json.data || []).length + 1;
+    } else {
+      _nextPhotoNum = 1;
+    }
+  } catch { _nextPhotoNum = 1; }
+  return _nextPhotoNum;
+}
 
 function initUpload() {
   const area = $('#uploadArea');
@@ -214,15 +216,11 @@ function initUpload() {
   const clearBtn = $('#queueClearBtn');
   if (!area) return;
 
-  area.addEventListener('click', (e) => {
-    if (e.target !== fileInput) fileInput?.click();
-  });
-
+  area.addEventListener('click', (e) => { if (e.target !== fileInput) fileInput?.click(); });
   fileInput?.addEventListener('change', (e) => {
     addFilesToQueue([...e.target.files]);
     e.target.value = '';
   });
-
   area.addEventListener('dragover', (e) => { e.preventDefault(); area.classList.add('drag-over'); });
   area.addEventListener('dragleave', (e) => {
     if (!area.contains(e.relatedTarget)) area.classList.remove('drag-over');
@@ -231,7 +229,6 @@ function initUpload() {
     e.preventDefault(); area.classList.remove('drag-over');
     addFilesToQueue([...e.dataTransfer.files].filter((f) => ALLOWED_TYPES.includes(f.type)));
   });
-
   submitBtn?.addEventListener('click', () => uploadAll());
   clearBtn?.addEventListener('click', () => {
     uploadQueue = uploadQueue.filter((q) => q.status === 'done');
@@ -239,7 +236,7 @@ function initUpload() {
   });
 }
 
-function addFilesToQueue(files) {
+async function addFilesToQueue(files) {
   const valid = files.filter((f) => {
     if (!ALLOWED_TYPES.includes(f.type)) { showToast(`Unsupported: ${f.name}`, 'error'); return false; }
     if (f.size > MAX_FILE_SIZE_BYTES) { showToast(`Too large: ${f.name}`, 'error'); return false; }
@@ -247,11 +244,18 @@ function addFilesToQueue(files) {
   });
   if (!valid.length) return;
 
-  valid.forEach((file) => {
+  // Get starting number (existing photos + current queue pending count)
+  const startNum = await getStartingPhotoNum();
+  const currentPending = uploadQueue.filter(q => q.status === 'pending').length;
+
+  valid.forEach((file, idx) => {
     const id = Math.random().toString(36).slice(2);
-    const defaultTitle = file.name.replace(/\.[^/.]+$/, '');
+    const seqNum = startNum + currentPending + idx;
+    const defaultTitle = `Photo${seqNum}`;
     uploadQueue.push({ file, id, status: 'pending', progress: 0, previewUrl: null, title: defaultTitle });
   });
+  // Increment cached counter
+  if (_nextPhotoNum !== null) _nextPhotoNum += valid.length;
   renderQueue();
 }
 
@@ -260,8 +264,7 @@ function renderQueue() {
   const list = $('#queueList');
   if (!list) return;
 
-  const pending = uploadQueue.filter((q) => q.status !== 'done');
-  if (!pending.length && !uploadQueue.length) { if (section) section.style.display = 'none'; return; }
+  if (!uploadQueue.length) { if (section) section.style.display = 'none'; return; }
   if (section) section.style.display = 'block';
 
   list.innerHTML = '';
@@ -271,10 +274,10 @@ function renderQueue() {
 
     const isEditable = item.status === 'pending';
     el.innerHTML = `
-      ${item.previewUrl ? `<img class="queue-thumb" src="${escapeHtml(item.previewUrl)}" />` : '<div class="queue-thumb" style="background:#1c1c38;"></div>'}
+      ${item.previewUrl ? `<img class="queue-thumb" src="${escapeHtml(item.previewUrl)}" />` : '<div class="queue-thumb queue-thumb-loading"></div>'}
       <div class="queue-info">
         ${isEditable
-          ? `<input class="queue-title-input" id="title-${item.id}" type="text" value="${escapeHtml(item.title || item.file.name.replace(/\.[^/.]+$/, ''))}" placeholder="写真タイトル" maxlength="100" />`
+          ? `<input class="queue-title-input" id="title-${item.id}" type="text" value="${escapeHtml(item.title)}" placeholder="Photo title" maxlength="100" />`
           : `<div class="queue-filename">${escapeHtml(item.title || item.file.name)}</div>`
         }
         <div class="queue-progress-bar"><div class="queue-progress-fill" id="prog-${item.id}" style="width:${item.progress}%"></div></div>
@@ -289,7 +292,7 @@ function renderQueue() {
       reader.onload = (e) => {
         item.previewUrl = e.target.result;
         const thumb = el.querySelector('.queue-thumb');
-        if (thumb && thumb.tagName !== 'IMG') {
+        if (thumb) {
           const img = document.createElement('img');
           img.className = 'queue-thumb'; img.src = e.target.result;
           thumb.replaceWith(img);
@@ -319,6 +322,8 @@ async function uploadAll() {
   if (btn) btn.disabled = false;
   if (ok) {
     showToast(`${ok} photo(s) uploaded!`, 'success');
+    // Reset number cache so next batch starts fresh
+    _nextPhotoNum = null;
     setTimeout(() => {
       uploadQueue = uploadQueue.filter((q) => q.status !== 'done');
       renderQueue();
@@ -332,12 +337,10 @@ async function uploadFile(item) {
   updateStatus(item);
 
   try {
-    // Get dimensions
     const dims = await getImageDimensions(item.file);
-
     const formData = new FormData();
     formData.append('file', item.file);
-    // Read title from input if available, else use stored title or filename
+
     const titleInput = document.getElementById(`title-${item.id}`);
     const titleValue = titleInput ? titleInput.value.trim() : '';
     const finalTitle = titleValue || item.title || item.file.name.replace(/\.[^/.]+$/, '');
@@ -345,11 +348,9 @@ async function uploadFile(item) {
     formData.append('width', String(dims.width));
     formData.append('height', String(dims.height));
 
-    // Use XMLHttpRequest for progress
     await new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       xhr.open('POST', `${API_BASE}/photos`);
-
       const token = getToken();
       if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
 
@@ -360,24 +361,18 @@ async function uploadFile(item) {
           if (fill) fill.style.width = `${item.progress}%`;
         }
       };
-
       xhr.onload = () => {
         if (xhr.status >= 200 && xhr.status < 300) {
           item.status = 'done'; item.progress = 100;
           updateStatus(item); resolve();
         } else {
-          try {
-            const errJson = JSON.parse(xhr.responseText);
-            reject(new Error(errJson.error || `HTTP ${xhr.status}`));
-          } catch {
-            reject(new Error(`HTTP ${xhr.status}`));
-          }
+          try { const e = JSON.parse(xhr.responseText); reject(new Error(e.error || `HTTP ${xhr.status}`)); }
+          catch { reject(new Error(`HTTP ${xhr.status}`)); }
         }
       };
       xhr.onerror = () => reject(new Error('Network error'));
       xhr.send(formData);
     });
-
   } catch (err) {
     item.status = 'error'; item.progress = 0;
     updateStatus(item);
@@ -388,10 +383,7 @@ async function uploadFile(item) {
 function getImageDimensions(file) {
   return new Promise((resolve) => {
     const img = new Image();
-    img.onload = () => {
-      resolve({ width: img.naturalWidth, height: img.naturalHeight });
-      URL.revokeObjectURL(img.src);
-    };
+    img.onload = () => { resolve({ width: img.naturalWidth, height: img.naturalHeight }); URL.revokeObjectURL(img.src); };
     img.onerror = () => resolve({ width: 0, height: 0 });
     img.src = URL.createObjectURL(file);
   });
@@ -403,10 +395,12 @@ function updateStatus(item) {
 }
 
 /* ================================================================
-   MANAGE GRID
+   MANAGE GRID — with title edit & drag-to-reorder
    ================================================================ */
 
 let photoToDelete = null;
+let managedPhotos = []; // current photo list for DnD
+let dragSrcIndex = null;
 
 async function loadManageGrid() {
   const grid = $('#manageGrid');
@@ -426,34 +420,14 @@ async function loadManageGrid() {
       throw new Error(errData.error || `HTTP ${res.status}`);
     }
     const json = await res.json();
-    const photos = json.data || [];
+    managedPhotos = json.data || [];
 
     if (loading) loading.style.display = 'none';
-    if (stat) stat.textContent = String(photos.length);
+    if (stat) stat.textContent = String(managedPhotos.length);
 
-    if (!photos.length) { if (empty) empty.style.display = 'flex'; return; }
+    if (!managedPhotos.length) { if (empty) empty.style.display = 'flex'; return; }
 
-    grid.style.display = 'grid';
-    grid.innerHTML = '';
-
-    photos.forEach((photo) => {
-      const card = document.createElement('div');
-      card.className = 'manage-card';
-      card.innerHTML = `
-        <img class="manage-card-img" src="${escapeHtml(photo.url)}" alt="${escapeHtml(photo.title)}" loading="lazy" />
-        <div class="manage-card-overlay">
-          <button class="delete-btn" data-id="${escapeHtml(photo.id)}">DELETE</button>
-        </div>
-        <div class="manage-card-meta"><p class="manage-card-name">${escapeHtml(photo.title || photo.id)}</p></div>`;
-
-      card.querySelector('.delete-btn')?.addEventListener('click', (e) => {
-        e.stopPropagation();
-        photoToDelete = photo.id;
-        showDeleteModal();
-      });
-
-      grid.appendChild(card);
-    });
+    renderManageGrid();
 
   } catch (err) {
     console.error(err);
@@ -464,8 +438,161 @@ async function loadManageGrid() {
     } else if (msg.includes('no such table')) {
       showToast('⚠️ DB table missing. Run: wrangler d1 execute rei-sample-db --file=./schema.sql', 'error', 8000);
     } else {
-      showToast(`Failed to load photos: ${msg}`, 'error');
+      showToast(`Failed to load: ${msg}`, 'error');
     }
+  }
+}
+
+function renderManageGrid() {
+  const grid = $('#manageGrid');
+  if (!grid) return;
+  grid.style.display = 'grid';
+  grid.innerHTML = '';
+
+  managedPhotos.forEach((photo, index) => {
+    const card = document.createElement('div');
+    card.className = 'manage-card';
+    card.dataset.id = photo.id;
+    card.dataset.index = index;
+    card.draggable = true;
+
+    card.innerHTML = `
+      <div class="drag-handle" title="ドラッグして並び替え">⠿</div>
+      <img class="manage-card-img" src="${escapeHtml(photo.url)}" alt="${escapeHtml(photo.title)}" loading="lazy" />
+      <div class="manage-card-overlay">
+        <button class="delete-btn" data-id="${escapeHtml(photo.id)}">DELETE</button>
+      </div>
+      <div class="manage-card-meta">
+        <div class="manage-title-row">
+          <p class="manage-card-name" data-id="${escapeHtml(photo.id)}" title="クリックして編集">${escapeHtml(photo.title || photo.id)}</p>
+          <button class="edit-title-btn" data-id="${escapeHtml(photo.id)}" data-title="${escapeHtml(photo.title || '')}" title="タイトルを編集">✏️</button>
+        </div>
+      </div>`;
+
+    // Delete
+    card.querySelector('.delete-btn')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      photoToDelete = photo.id;
+      showDeleteModal();
+    });
+
+    // Edit title — click pencil button
+    card.querySelector('.edit-title-btn')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      startInlineEdit(card, photo);
+    });
+
+    // Edit title — click title text
+    card.querySelector('.manage-card-name')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      startInlineEdit(card, photo);
+    });
+
+    // Drag events
+    card.addEventListener('dragstart', (e) => {
+      dragSrcIndex = index;
+      card.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    card.addEventListener('dragend', () => {
+      card.classList.remove('dragging');
+      $$('.manage-card').forEach(c => c.classList.remove('drag-over'));
+    });
+    card.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      $$('.manage-card').forEach(c => c.classList.remove('drag-over'));
+      if (dragSrcIndex !== index) card.classList.add('drag-over');
+    });
+    card.addEventListener('dragleave', () => card.classList.remove('drag-over'));
+    card.addEventListener('drop', (e) => {
+      e.preventDefault();
+      card.classList.remove('drag-over');
+      if (dragSrcIndex === null || dragSrcIndex === index) return;
+      reorderPhotos(dragSrcIndex, index);
+      dragSrcIndex = null;
+    });
+
+    grid.appendChild(card);
+  });
+}
+
+function startInlineEdit(card, photo) {
+  const nameEl = card.querySelector('.manage-card-name');
+  const editBtn = card.querySelector('.edit-title-btn');
+  if (!nameEl || nameEl.querySelector('input')) return; // already editing
+
+  const currentTitle = photo.title || '';
+  nameEl.innerHTML = '';
+  editBtn.style.display = 'none';
+
+  const input = document.createElement('input');
+  input.className = 'manage-title-input';
+  input.value = currentTitle;
+  input.maxLength = 100;
+  input.placeholder = 'Photo title';
+  nameEl.appendChild(input);
+  input.focus();
+  input.select();
+
+  async function saveTitle() {
+    const newTitle = input.value.trim();
+    editBtn.style.display = '';
+    if (newTitle === currentTitle) {
+      nameEl.textContent = escapeHtml(currentTitle) || photo.id;
+      // re-attach click
+      nameEl.addEventListener('click', (e) => { e.stopPropagation(); startInlineEdit(card, photo); });
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/photos/${photo.id}`, {
+        method: 'PATCH',
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: newTitle }),
+      });
+      if (!res.ok) throw new Error('Update failed');
+      photo.title = newTitle;
+      nameEl.textContent = newTitle || photo.id;
+      showToast('タイトルを更新しました', 'success', 2000);
+    } catch (err) {
+      nameEl.textContent = currentTitle || photo.id;
+      showToast('更新に失敗しました', 'error');
+    }
+    nameEl.dataset.id = photo.id;
+    nameEl.style.cursor = 'pointer';
+    nameEl.addEventListener('click', (e) => { e.stopPropagation(); startInlineEdit(card, photo); });
+  }
+
+  input.addEventListener('blur', saveTitle);
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+    if (e.key === 'Escape') { input.value = currentTitle; input.blur(); }
+  });
+}
+
+async function reorderPhotos(fromIndex, toIndex) {
+  // Reorder in local array
+  const moved = managedPhotos.splice(fromIndex, 1)[0];
+  managedPhotos.splice(toIndex, 0, moved);
+
+  // Re-render immediately
+  renderManageGrid();
+
+  // Persist new order: update sort_order for all photos
+  const updates = managedPhotos.map((p, i) =>
+    fetch(`${API_BASE}/photos/${p.id}`, {
+      method: 'PATCH',
+      headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sort_order: i + 1 }),
+    })
+  );
+
+  try {
+    await Promise.all(updates);
+    showToast('並び順を保存しました', 'success', 2000);
+  } catch {
+    showToast('並び順の保存に失敗しました', 'error');
   }
 }
 
@@ -484,12 +611,8 @@ function initDeleteModal() {
     if (!photoToDelete) return;
     const id = photoToDelete;
     hideDeleteModal();
-
     try {
-      const res = await fetch(`${API_BASE}/photos/${id}`, {
-        method: 'DELETE',
-        headers: authHeaders(),
-      });
+      const res = await fetch(`${API_BASE}/photos/${id}`, { method: 'DELETE', headers: authHeaders() });
       if (!res.ok && res.status !== 204) throw new Error('Delete failed');
       showToast('Photo deleted.', 'success');
       await loadManageGrid();
