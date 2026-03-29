@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>REI SAMPLE</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=Quicksand:wght@400;600;700&family=JetBrains+Mono:wght@300;400;500&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/gallery.css" />
+</head>
+<body>
+
+  <!-- ============================================================
+       MODE SELECTION LANDING
+       ============================================================ -->
+  <div id="landing" class="landing">
+    <div class="landing-bg">
+      <canvas id="landingCanvas"></canvas>
+    </div>
+    <div class="landing-content">
+      <h1 class="landing-title">REI SAMPLE</h1>
+      <p class="landing-sub">Choose Your Experience</p>
+      <div class="mode-cards">
+        <!-- POP -->
+        <button class="mode-card mode-pop" data-mode="pop">
+          <span class="mode-icon">🎀</span>
+          <span class="mode-name">POP</span>
+          <span class="mode-desc">Cute &amp; Colorful</span>
+          <span class="mode-preview pop-preview">
+            <span class="pop-heart">♥</span><span class="pop-star">★</span><span class="pop-heart">♥</span>
+          </span>
+        </button>
+        <!-- CYBER -->
+        <button class="mode-card mode-cyber" data-mode="cyber">
+          <span class="mode-icon">⚡</span>
+          <span class="mode-name">CYBER</span>
+          <span class="mode-desc">Futuristic &amp; Immersive</span>
+          <span class="mode-preview cyber-preview">
+            <span class="cyber-line"></span><span class="cyber-line"></span><span class="cyber-line"></span>
+          </span>
+        </button>
+        <!-- INORGANIC -->
+        <button class="mode-card mode-inorganic" data-mode="inorganic">
+          <span class="mode-icon">△</span>
+          <span class="mode-name">INORGANIC</span>
+          <span class="mode-desc">Geometric &amp; Minimal</span>
+          <span class="mode-preview inorganic-preview">
+            <svg viewBox="0 0 60 60" width="60" height="60"><polygon points="30,5 55,50 5,50" fill="none" stroke="currentColor" stroke-width="1"/><circle cx="30" cy="35" r="12" fill="none" stroke="currentColor" stroke-width="1"/></svg>
+          </span>
+        </button>
+      </div>
+      <a href="/admin.html" class="landing-admin-link">ADMIN</a>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       GALLERY
+       ============================================================ -->
+  <div id="gallery" class="gallery" style="display:none;">
+    <!-- Canvas for background effects -->
+    <canvas id="particleCanvas" class="particle-canvas"></canvas>
+
+    <!-- Geometric background for INORGANIC mode -->
+    <svg id="geoBackground" class="geo-background" xmlns="http://www.w3.org/2000/svg"></svg>
+
+    <!-- Edge neon lines (CYBER) -->
+    <div class="edge-lines">
+      <div class="edge-line edge-top"></div>
+      <div class="edge-line edge-right"></div>
+      <div class="edge-line edge-bottom"></div>
+      <div class="edge-line edge-left"></div>
+    </div>
+
+    <!-- Scroll progress -->
+    <div class="scroll-progress" id="scrollProgress"></div>
+
+    <!-- Header -->
+    <header class="gallery-header" id="galleryHeader">
+      <h1 class="gallery-title" id="galleryTitle">REI SAMPLE</h1>
+      <button class="mode-switch-btn" id="modeSwitchBtn" title="Change display mode">MODE</button>
+    </header>
+
+    <!-- Photo list -->
+    <main class="photo-list" id="photoList">
+      <!-- Photos injected by JS -->
+    </main>
+
+    <!-- Scroll hint -->
+    <div class="scroll-hint" id="scrollHint">
+      <span>Scroll to explore</span>
+      <div class="scroll-arrow">↓</div>
+    </div>
+
+    <!-- Lightbox -->
+    <div class="lightbox" id="lightbox">
+      <div class="lightbox-backdrop"></div>
+      <img class="lightbox-img" id="lightboxImg" src="" alt="" />
+      <button class="lightbox-close" id="lightboxClose">✕</button>
+      <button class="lightbox-prev" id="lightboxPrev">‹</button>
+      <button class="lightbox-next" id="lightboxNext">›</button>
+    </div>
+
+
+  </div>
+
+  <script src="/js/gallery.js"></script>
+</body>
+</html>

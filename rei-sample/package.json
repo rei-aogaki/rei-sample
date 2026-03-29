@@ -1,0 +1,19 @@
+{
+  "name": "rei-sample",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "npx wrangler pages dev public --d1=DB --r2=STORAGE --compatibility-date=2024-12-01",
+    "deploy": "npx wrangler pages deploy public",
+    "db:init": "npx wrangler d1 execute rei-sample-db --remote --file=./schema.sql",
+    "db:init:local": "npx wrangler d1 execute rei-sample-db --local --file=./schema.sql"
+  },
+  "dependencies": {
+    "hono": "^4.6.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241205.0",
+    "typescript": "^5.7.0",
+    "wrangler": "^4.78.0"
+  }
+}

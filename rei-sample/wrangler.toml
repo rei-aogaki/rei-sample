@@ -6,7 +6,7 @@ pages_build_output_dir = "./public"
 [[d1_databases]]
 binding = "DB"
 database_name = "rei-sample-db"
-database_id = "9aa0ce96-40c9-4688-9a8a-4033cd7c056b"
+database_id = ""  # ← `wrangler d1 create rei-sample-db` で取得したIDを貼る
 
 # ─── R2 Bucket ───
 [[r2_buckets]]
