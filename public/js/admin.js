@@ -356,7 +356,12 @@ async function uploadFile(item) {
           item.status = 'done'; item.progress = 100;
           updateStatus(item); resolve();
         } else {
-          reject(new Error(`HTTP ${xhr.status}`));
+          try {
+            const errJson = JSON.parse(xhr.responseText);
+            reject(new Error(errJson.error || `HTTP ${xhr.status}`));
+          } catch {
+            reject(new Error(`HTTP ${xhr.status}`));
+          }
         }
       };
       xhr.onerror = () => reject(new Error('Network error'));
@@ -406,7 +411,10 @@ async function loadManageGrid() {
 
   try {
     const res = await fetch(`${API_BASE}/photos`);
-    if (!res.ok) throw new Error('Load failed');
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || `HTTP ${res.status}`);
+    }
     const json = await res.json();
     const photos = json.data || [];
 
@@ -440,7 +448,14 @@ async function loadManageGrid() {
   } catch (err) {
     console.error(err);
     if (loading) loading.style.display = 'none';
-    showToast('Failed to load photos.', 'error');
+    const msg = err?.message || 'Failed to load photos.';
+    if (msg.includes('binding') || msg.includes('503')) {
+      showToast('⚠️ D1/R2 binding not configured. See Cloudflare Dashboard > Bindings.', 'error', 6000);
+    } else if (msg.includes('no such table')) {
+      showToast('⚠️ DB table missing. Run: wrangler d1 execute rei-sample-db --file=./schema.sql', 'error', 8000);
+    } else {
+      showToast(`Failed to load photos: ${msg}`, 'error');
+    }
   }
 }
 

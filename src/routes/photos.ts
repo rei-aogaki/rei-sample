@@ -43,17 +43,23 @@ function extFromMime(mime: string): string {
    GET /api/photos  — public list
    ───────────────────────────────────────────── */
 photosRoutes.get('/', async (c) => {
+  if (!c.env.DB) return c.json({ error: 'D1 database binding (DB) is not configured. Please add it in Cloudflare Dashboard > Settings > Bindings.' }, 503);
+
   const limit = Math.min(Number(c.req.query('limit') ?? 200), 500);
   const offset = Number(c.req.query('offset') ?? 0);
 
-  const { results } = await c.env.DB.prepare(
-    `SELECT * FROM photos ORDER BY sort_order ASC, created_at DESC LIMIT ? OFFSET ?`
-  ).bind(limit, offset).all<PhotoRow>();
+  try {
+    const { results } = await c.env.DB.prepare(
+      `SELECT * FROM photos ORDER BY sort_order ASC, created_at DESC LIMIT ? OFFSET ?`
+    ).bind(limit, offset).all<PhotoRow>();
 
-  const base = getBaseUrl(c);
-  const data = (results ?? []).map((r) => toPublic(r, base));
-
-  return c.json({ data, total: data.length });
+    const base = getBaseUrl(c);
+    const data = (results ?? []).map((r) => toPublic(r, base));
+    return c.json({ data, total: data.length });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return c.json({ error: `Database error: ${msg}` }, 500);
+  }
 });
 
 /* ─────────────────────────────────────────────
@@ -84,6 +90,9 @@ photosRoutes.get('/:id/image', async (c) => {
    multipart/form-data: file + optional title
    ───────────────────────────────────────────── */
 photosRoutes.post('/', authMiddleware, async (c) => {
+  if (!c.env.DB) return c.json({ error: 'D1 database binding (DB) is not configured.' }, 503);
+  if (!c.env.STORAGE) return c.json({ error: 'R2 bucket binding (STORAGE) is not configured.' }, 503);
+
   const formData = await c.req.formData();
   const file = formData.get('file') as File | null;
   const title = (formData.get('title') as string) || '';
@@ -147,6 +156,9 @@ photosRoutes.post('/', authMiddleware, async (c) => {
    DELETE /api/photos/:id  — delete (auth required)
    ───────────────────────────────────────────── */
 photosRoutes.delete('/:id', authMiddleware, async (c) => {
+  if (!c.env.DB) return c.json({ error: 'D1 database binding (DB) is not configured.' }, 503);
+  if (!c.env.STORAGE) return c.json({ error: 'R2 bucket binding (STORAGE) is not configured.' }, 503);
+
   const id = c.req.param('id');
 
   const row = await c.env.DB.prepare(
