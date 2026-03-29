@@ -120,6 +120,32 @@ body { font-family: 'Inter', sans-serif; background: #0d0d1e; color: #e0e0e0; mi
 .queue-status.done { color: #00e676; }
 .queue-status.error { color: #ff4060; }
 
+/* Queue title input */
+.queue-title-input {
+  width: 100%;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(0,212,255,0.25);
+  border-radius: 4px;
+  color: #e0e0e0;
+  font-size: 0.82rem;
+  font-family: 'Inter', sans-serif;
+  padding: 0.3rem 0.5rem;
+  margin-bottom: 0.3rem;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+.queue-title-input:focus {
+  border-color: #00d4ff;
+  background: rgba(0,212,255,0.05);
+}
+.queue-title-input::placeholder { color: #555; }
+.queue-filesize {
+  font-size: 0.68rem;
+  color: #555;
+  margin-top: 0.15rem;
+  letter-spacing: 0.05em;
+}
+
 /* Buttons */
 .btn {
   padding: 0.6rem 1.2rem; border: none; border-radius: 6px;

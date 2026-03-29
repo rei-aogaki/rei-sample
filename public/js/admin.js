@@ -249,7 +249,8 @@ function addFilesToQueue(files) {
 
   valid.forEach((file) => {
     const id = Math.random().toString(36).slice(2);
-    uploadQueue.push({ file, id, status: 'pending', progress: 0, previewUrl: null });
+    const defaultTitle = file.name.replace(/\.[^/.]+$/, '');
+    uploadQueue.push({ file, id, status: 'pending', progress: 0, previewUrl: null, title: defaultTitle });
   });
   renderQueue();
 }
@@ -268,11 +269,16 @@ function renderQueue() {
     const el = document.createElement('div');
     el.className = 'queue-item'; el.id = `queue-${item.id}`;
 
+    const isEditable = item.status === 'pending';
     el.innerHTML = `
       ${item.previewUrl ? `<img class="queue-thumb" src="${escapeHtml(item.previewUrl)}" />` : '<div class="queue-thumb" style="background:#1c1c38;"></div>'}
       <div class="queue-info">
-        <div class="queue-filename">${escapeHtml(item.file.name)}</div>
+        ${isEditable
+          ? `<input class="queue-title-input" id="title-${item.id}" type="text" value="${escapeHtml(item.title || item.file.name.replace(/\.[^/.]+$/, ''))}" placeholder="写真タイトル" maxlength="100" />`
+          : `<div class="queue-filename">${escapeHtml(item.title || item.file.name)}</div>`
+        }
         <div class="queue-progress-bar"><div class="queue-progress-fill" id="prog-${item.id}" style="width:${item.progress}%"></div></div>
+        <div class="queue-filesize">${(item.file.size / 1024 / 1024).toFixed(1)} MB</div>
       </div>
       <span class="queue-status ${item.status}" id="st-${item.id}">${statusLabel(item.status)}</span>`;
 
@@ -331,7 +337,11 @@ async function uploadFile(item) {
 
     const formData = new FormData();
     formData.append('file', item.file);
-    formData.append('title', item.file.name.replace(/\.[^/.]+$/, ''));
+    // Read title from input if available, else use stored title or filename
+    const titleInput = document.getElementById(`title-${item.id}`);
+    const titleValue = titleInput ? titleInput.value.trim() : '';
+    const finalTitle = titleValue || item.title || item.file.name.replace(/\.[^/.]+$/, '');
+    formData.append('title', finalTitle);
     formData.append('width', String(dims.width));
     formData.append('height', String(dims.height));
 

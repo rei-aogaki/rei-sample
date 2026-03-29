@@ -184,13 +184,22 @@ function renderPhotos(photos) {
     item.classList.add(animClass);
 
     item.innerHTML = `
-      <div class="photo-wrap" data-index="${i}">
+      <div class="photo-wrap" data-index="${i}" role="button" tabindex="0" aria-label="${escapeHtml(photo.title)} — クリックして拡大">
         <img class="photo-img" src="${escapeHtml(photo.url)}" alt="${escapeHtml(photo.title)}"
              loading="lazy" decoding="async" />
-      </div>
-      <div class="photo-meta">
-        <span class="photo-title">${escapeHtml(photo.title)}</span>
+        <div class="photo-overlay">
+          <span class="photo-meta">${escapeHtml(photo.title)}</span>
+          <span class="photo-meta-expand">▶ VIEW</span>
+        </div>
       </div>`;
+
+    // Keyboard support for accessibility
+    item.querySelector('.photo-wrap').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        item.querySelector('.photo-wrap').click();
+      }
+    });
 
     list.appendChild(item);
   });
@@ -273,9 +282,16 @@ function initLightbox(photos) {
   const nextBtn = $('#lightboxNext');
   if (!lb || !img) return;
 
+  const caption = $('#lightboxCaption');
+  const counter = $('#lightboxCounter');
   let current = 0;
   let scale = 1;
   let lastDist = 0;
+
+  function updateCaption(index) {
+    if (caption) caption.textContent = photos[index].title || '';
+    if (counter) counter.textContent = `${index + 1} / ${photos.length}`;
+  }
 
   function open(index) {
     current = index;
@@ -283,6 +299,7 @@ function initLightbox(photos) {
     img.alt = photos[index].title || '';
     img.style.transform = '';
     scale = 1;
+    updateCaption(index);
     lb.classList.add('active');
     document.body.style.overflow = 'hidden';
   }
@@ -295,12 +312,15 @@ function initLightbox(photos) {
   function nav(dir) {
     current = (current + dir + photos.length) % photos.length;
     img.style.opacity = '0';
+    if (caption) caption.style.opacity = '0';
     setTimeout(() => {
       img.src = photos[current].url;
       img.alt = photos[current].title || '';
       img.style.opacity = '1';
+      if (caption) caption.style.opacity = '0.8';
       scale = 1;
       img.style.transform = '';
+      updateCaption(current);
     }, 200);
   }
 
