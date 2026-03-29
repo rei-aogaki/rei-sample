@@ -36,9 +36,9 @@ function authHeaders() {
 async function verifySession() {
   const token = getToken();
   if (!token) return false;
-  // Quick check: try to list photos with auth
+  // Verify token via dedicated endpoint (auth required)
   try {
-    const res = await fetch(`${API_BASE}/photos`, { headers: authHeaders() });
+    const res = await fetch(`${API_BASE}/auth/verify`, { headers: authHeaders() });
     return res.ok;
   } catch { return false; }
 }

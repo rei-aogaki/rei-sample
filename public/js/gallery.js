@@ -186,9 +186,7 @@ function renderPhotos(photos) {
     item.innerHTML = `
       <div class="photo-wrap" data-index="${i}">
         <img class="photo-img" src="${escapeHtml(photo.url)}" alt="${escapeHtml(photo.title)}"
-             loading="lazy" decoding="async"
-             ${photo.width ? `width="${photo.width}"` : ''}
-             ${photo.height ? `height="${photo.height}"` : ''} />
+             loading="lazy" decoding="async" />
       </div>
       <div class="photo-meta">
         <span class="photo-title">${escapeHtml(photo.title)}</span>
