@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>REI SAMPLE — Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/admin.css" />
+</head>
+<body>
+
+  <!-- ============================================================
+       LOGIN SCREEN
+       ============================================================ -->
+  <div id="loginScreen" class="login-screen">
+    <div id="loginParticles" class="login-particles"></div>
+    <form id="loginForm" class="login-card" autocomplete="off">
+      <h1 class="login-title">REI SAMPLE</h1>
+      <p class="login-subtitle">Admin Panel</p>
+      <div class="login-field">
+        <input type="password" id="passwordInput" class="login-input" placeholder="Enter password" required autocomplete="current-password" />
+      </div>
+      <p id="loginError" class="login-error"></p>
+      <button type="submit" class="login-btn" id="loginBtn">ENTER</button>
+    </form>
+  </div>
+
+  <!-- ============================================================
+       ADMIN PANEL
+       ============================================================ -->
+  <div id="adminPanel" class="admin-panel" style="display:none;">
+    <!-- Mobile menu button -->
+    <button id="mobileMenuBtn" class="mobile-menu-btn" aria-label="Toggle menu">
+      <span></span><span></span><span></span>
+    </button>
+
+    <!-- Sidebar -->
+    <aside id="adminSidebar" class="admin-sidebar">
+      <div class="sidebar-header">
+        <h2 class="sidebar-title">REI SAMPLE</h2>
+        <span class="sidebar-badge">CMS</span>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="#" class="sidebar-link active" data-section="upload">
+          <span class="sidebar-icon">📤</span> Upload
+        </a>
+        <a href="#" class="sidebar-link" data-section="manage">
+          <span class="sidebar-icon">🖼</span> Manage
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <a href="/" class="sidebar-link">
+          <span class="sidebar-icon">🌐</span> View Gallery
+        </a>
+        <button id="logoutBtn" class="sidebar-link logout-link">
+          <span class="sidebar-icon">🚪</span> Logout
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main content -->
+    <div class="admin-main">
+      <!-- Upload Section -->
+      <section id="sectionUpload" class="admin-section active">
+        <h2 class="section-title">Upload Photos</h2>
+        <div id="uploadArea" class="upload-area">
+          <input type="file" id="fileInput" multiple accept="image/jpeg,image/png,image/webp,image/gif,image/avif" hidden />
+          <div class="upload-icon">📁</div>
+          <p class="upload-text" id="uploadText">DRAG &amp; DROP YOUR IMAGES HERE</p>
+          <p class="upload-hint">or click to select — JPEG, PNG, WebP, GIF, AVIF (max 10MB)</p>
+        </div>
+        <div id="uploadQueue" class="upload-queue" style="display:none;">
+          <div class="queue-header">
+            <h3>Upload Queue</h3>
+            <div class="queue-actions">
+              <button id="uploadSubmitBtn" class="btn btn-primary">UPLOAD ALL</button>
+              <button id="queueClearBtn" class="btn btn-ghost">CLEAR</button>
+            </div>
+          </div>
+          <div id="queueList" class="queue-list"></div>
+        </div>
+      </section>
+
+      <!-- Manage Section -->
+      <section id="sectionManage" class="admin-section">
+        <div class="section-header">
+          <h2 class="section-title">Manage Photos</h2>
+          <div class="section-stats">
+            <span class="stat">Total: <strong id="statTotal">0</strong></span>
+          </div>
+        </div>
+        <div id="manageLoading" class="manage-loading" style="display:none;">
+          <div class="spinner"></div>
+          <p>Loading…</p>
+        </div>
+        <div id="manageEmpty" class="manage-empty" style="display:none;">
+          <p>No photos yet.</p>
+          <button id="goUploadBtn" class="btn btn-primary">Upload First Photo</button>
+        </div>
+        <div id="manageGrid" class="manage-grid" style="display:none;"></div>
+      </section>
+    </div>
+  </div>
+
+  <!-- Delete confirm modal -->
+  <div id="deleteModal" class="modal" style="display:none;">
+    <div class="modal-card">
+      <h3>Delete Photo?</h3>
+      <p>This action cannot be undone.</p>
+      <div class="modal-actions">
+        <button id="modalCancelBtn" class="btn btn-ghost">CANCEL</button>
+        <button id="modalConfirmBtn" class="btn btn-danger">DELETE</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast container -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script src="/js/admin.js"></script>
+</body>
+</html>

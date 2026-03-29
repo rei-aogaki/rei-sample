@@ -1,0 +1,21 @@
+name = "rei-sample"
+compatibility_date = "2024-12-01"
+pages_build_output_dir = "./public"
+
+# ─── D1 Database ───
+[[d1_databases]]
+binding = "DB"
+database_name = "rei-sample-db"
+database_id = "9aa0ce96-40c9-4688-9a8a-4033cd7c056b"  # ← `wrangler d1 create rei-sample-db` で取得したIDを貼る
+
+# ─── R2 Bucket ───
+[[r2_buckets]]
+binding = "STORAGE"
+bucket_name = "gallery-photos"
+
+# ─── 環境変数 (wrangler.toml に書くか、Dashboardで設定) ───
+# [vars]
+# ADMIN_PASSWORD = "your-strong-password"
+# JWT_SECRET = "your-random-secret-key"
+#
+# ⚠️ 本番ではDashboard > Settings > Environment variables で設定推奨
