@@ -166,30 +166,50 @@
     const slidePhotos = allPhotos.filter(p => p !== heroPhoto && p !== aboutPhoto);
     if (slidePhotos.length === 0) return;
 
-    /* Limit to 8 photos max for performance */
-    const selected = slidePhotos.slice(0, 8);
+    /* Limit to 5 photos for performance */
+    const selected = slidePhotos.slice(0, 5);
     let currentSlide = 0;
+    const slides = [];
 
-    /* Create slide elements */
+    /* Create slide elements but only load first image immediately */
     selected.forEach((photo, i) => {
       const slide = document.createElement('div');
       slide.className = 'hero-slide' + (i === 0 ? ' active' : '');
       const img = document.createElement('img');
-      img.src = photo.url || `${API}/${photo.id}/image`;
       img.alt = '';
-      img.loading = i === 0 ? 'eager' : 'lazy';
+      /* Only load first image now; defer rest */
+      if (i === 0) {
+        img.src = photo.url || `${API}/${photo.id}/image`;
+      } else {
+        img.dataset.src = photo.url || `${API}/${photo.id}/image`;
+      }
       slide.appendChild(img);
       heroSlideshow.appendChild(slide);
+      slides.push({ el: slide, img, loaded: i === 0 });
     });
 
-    /* Rotate slides */
+    /* Preload next image before showing it */
+    function preloadNext(idx) {
+      const next = slides[idx];
+      if (next && !next.loaded && next.img.dataset.src) {
+        next.img.src = next.img.dataset.src;
+        next.loaded = true;
+      }
+    }
+
+    /* Rotate slides every 7 seconds */
     if (selected.length > 1) {
+      /* Preload second image after 3 seconds */
+      setTimeout(() => preloadNext(1), 3000);
+
       slideshowTimer = setInterval(() => {
-        const slides = $$('.hero-slide');
-        slides[currentSlide].classList.remove('active');
+        slides[currentSlide].el.classList.remove('active');
         currentSlide = (currentSlide + 1) % slides.length;
-        slides[currentSlide].classList.add('active');
-      }, 5000);
+        slides[currentSlide].el.classList.add('active');
+        /* Preload the next one */
+        const nextIdx = (currentSlide + 1) % slides.length;
+        preloadNext(nextIdx);
+      }, 7000);
     }
   }
 
