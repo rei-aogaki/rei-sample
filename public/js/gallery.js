@@ -137,7 +137,7 @@
       const res = await fetch(`${API}?limit=200`);
       const data = await res.json();
       if (data.error) { console.warn('API error:', data.error); photos = []; renderGallery(); return; }
-      const all = data.photos || [];
+      const all = data.data || [];
 
       /* separate hero / about / gallery */
       heroPhoto  = all.find(p => (p.title || '').toLowerCase().includes('[hero]')) || null;
