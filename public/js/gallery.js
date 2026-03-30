@@ -415,20 +415,24 @@
     }
   });
 
-  /* Fade-in observer for sections */
-  function observeFadeIns() {
-    const els = $$('.about-inner, .gallery-header-area, .sns-content, .about-tags, .follow-btn');
-    els.forEach(el => el.classList.add('fade-in'));
+  /* Scroll reveal observer for [data-reveal] elements */
+  function observeReveals() {
+    const revealEls = $$('[data-reveal]');
+    if (revealEls.length === 0) return;
 
     const io = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
-          entry.target.classList.add('visible');
+          entry.target.classList.add('revealed');
           io.unobserve(entry.target);
         }
       });
-    }, { threshold: 0.15 });
-    els.forEach(el => io.observe(el));
+    }, {
+      threshold: 0.08,
+      rootMargin: '0px 0px -40px 0px'
+    });
+
+    revealEls.forEach(el => io.observe(el));
   }
 
   /* ================================================================
@@ -447,7 +451,7 @@
   function init() {
     initParticles();
     loadPhotos();
-    observeFadeIns();
+    observeReveals();
     updateScrollProgress();
     updateNavDots();
   }
