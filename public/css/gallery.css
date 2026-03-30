@@ -240,6 +240,7 @@ img { max-width: 100%; display: block; }
   border-radius: 8px;
   overflow: hidden;
   background: var(--bg-card);
+  min-height: 200px;
 }
 .about-name {
   font-family: var(--font-display);
@@ -469,11 +470,49 @@ img { max-width: 100%; display: block; }
 .sns-embed {
   width: 100%;
   max-width: 500px;
-  min-height: 300px;
   border-radius: 12px;
   overflow: hidden;
   border: 1px solid var(--border);
   background: var(--bg-card);
+}
+/* When Twitter widget loads, it injects an iframe */
+.sns-embed iframe {
+  border-radius: 12px !important;
+}
+/* Fallback card when widget doesn't render */
+.sns-embed-fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.2rem;
+  padding: 2.5rem 2rem;
+  text-decoration: none;
+  color: var(--text-primary);
+  transition: background 0.3s ease;
+}
+.sns-embed-fallback:hover {
+  background: var(--accent-glow);
+}
+.sns-embed-icon {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  border: 1px solid var(--border-light);
+  display: flex; align-items: center; justify-content: center;
+  transition: border-color 0.3s ease;
+}
+.sns-embed-fallback:hover .sns-embed-icon {
+  border-color: var(--accent);
+}
+.sns-embed-handle {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+}
+.sns-embed-desc {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
 }
 .follow-btn {
   display: inline-flex;
@@ -559,7 +598,15 @@ img { max-width: 100%; display: block; }
     gap: 2.5rem;
     max-width: 480px;
   }
-  .about-portrait { max-width: 260px; margin: 0 auto; }
+  .about-portrait {
+    max-width: 260px;
+    margin: 0 auto;
+    width: 100%;
+  }
+  .about-portrait img {
+    width: 100%;
+    border-radius: 8px;
+  }
 
   .gallery-section { padding: 4rem 1rem 6rem; }
   .photo-grid {

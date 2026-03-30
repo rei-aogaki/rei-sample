@@ -161,10 +161,11 @@
     img.alt = cleanTitle(heroPhoto.title);
     img.loading = 'eager';
     img.onload = () => {
-      heroPlaceholder.remove();
+      if (heroPlaceholder && heroPlaceholder.parentNode) heroPlaceholder.remove();
       heroVisual.appendChild(img);
     };
-    img.src = `${API}/${heroPhoto.id}/image`;
+    img.onerror = () => console.warn('Hero image failed to load');
+    img.src = heroPhoto.url || `${API}/${heroPhoto.id}/image`;
   }
 
   /* ─── Set About Image ─── */
@@ -172,12 +173,13 @@
     if (!aboutPhoto) return;
     const img = document.createElement('img');
     img.alt = cleanTitle(aboutPhoto.title);
-    img.loading = 'lazy';
+    img.loading = 'eager';
     img.onload = () => {
-      aboutPlaceholder.remove();
+      if (aboutPlaceholder && aboutPlaceholder.parentNode) aboutPlaceholder.remove();
       aboutPortrait.appendChild(img);
     };
-    img.src = `${API}/${aboutPhoto.id}/image`;
+    img.onerror = () => console.warn('About image failed to load');
+    img.src = aboutPhoto.url || `${API}/${aboutPhoto.id}/image`;
   }
 
   /* ─── Clean title (remove tags) ─── */
@@ -212,7 +214,7 @@
         img.classList.add('loaded');
         loader.style.display = 'none';
       };
-      img.src = `${API}/${photo.id}/image`;
+      img.src = photo.url || `${API}/${photo.id}/image`;
 
       /* tilt effect */
       const wrap = item.querySelector('.photo-wrap');
