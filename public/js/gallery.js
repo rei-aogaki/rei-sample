@@ -14,6 +14,7 @@
   let heroPhoto = null;
   let aboutPhoto = null;
   let lightboxIndex = -1;
+  let slideshowTimer = null;
 
   /* ─── DOM ─── */
   const $ = (sel, root = document) => root.querySelector(sel);
@@ -21,6 +22,7 @@
 
   const heroVisual     = $('#heroVisual');
   const heroPlaceholder = $('#heroPlaceholder');
+  const heroSlideshow  = $('#heroSlideshow');
   const aboutPortrait  = $('#aboutPortrait');
   const aboutPlaceholder = $('#aboutPlaceholder');
   const photoGrid      = $('#photoGrid');
@@ -147,10 +149,47 @@
       setHeroImage();
       setAboutImage();
       renderGallery();
+      initSlideshow(all);
     } catch (err) {
       console.warn('Photos API not available yet:', err.message);
       photos = [];
       renderGallery();
+    }
+  }
+
+  /* ================================================================
+     HERO BACKGROUND SLIDESHOW
+     ================================================================ */
+  function initSlideshow(allPhotos) {
+    if (!heroSlideshow) return;
+    /* Use gallery photos for slideshow (exclude hero/about) */
+    const slidePhotos = allPhotos.filter(p => p !== heroPhoto && p !== aboutPhoto);
+    if (slidePhotos.length === 0) return;
+
+    /* Limit to 8 photos max for performance */
+    const selected = slidePhotos.slice(0, 8);
+    let currentSlide = 0;
+
+    /* Create slide elements */
+    selected.forEach((photo, i) => {
+      const slide = document.createElement('div');
+      slide.className = 'hero-slide' + (i === 0 ? ' active' : '');
+      const img = document.createElement('img');
+      img.src = photo.url || `${API}/${photo.id}/image`;
+      img.alt = '';
+      img.loading = i === 0 ? 'eager' : 'lazy';
+      slide.appendChild(img);
+      heroSlideshow.appendChild(slide);
+    });
+
+    /* Rotate slides */
+    if (selected.length > 1) {
+      slideshowTimer = setInterval(() => {
+        const slides = $$('.hero-slide');
+        slides[currentSlide].classList.remove('active');
+        currentSlide = (currentSlide + 1) % slides.length;
+        slides[currentSlide].classList.add('active');
+      }, 5000);
     }
   }
 
